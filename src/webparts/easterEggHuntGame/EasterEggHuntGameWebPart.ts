@@ -3,7 +3,8 @@ import * as ReactDom from 'react-dom';
 import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
-  PropertyPaneTextField
+  PropertyPaneTextField,
+  PropertyPaneToggle
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
@@ -17,6 +18,8 @@ export interface IEasterEggHuntGameWebPartProps {
   gameDuration: number;
   numberOfEggs: number;
   numberOfBonusEggs: number;
+  externalCssClasses: string;
+  showGameArea: boolean;
 }
 
 export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEasterEggHuntGameWebPartProps> {
@@ -35,7 +38,9 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
         userDisplayName: this.context.pageContext.user.displayName,
         gameDuration: this.properties.gameDuration || 60, // Default 60 seconds
         numberOfEggs: this.properties.numberOfEggs || 10, // Default 10 eggs
-        numberOfBonusEggs: this.properties.numberOfBonusEggs || 2 // Default 2 bonus eggs
+        numberOfBonusEggs: this.properties.numberOfBonusEggs || 2, // Default 2 bonus eggs
+        externalCssClasses: this.properties.externalCssClasses || '', // CSS classes for external elements
+        showGameArea: this.properties.showGameArea !== false // Default true
       }
     );
 
@@ -133,6 +138,20 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
                 PropertyPaneTextField('numberOfBonusEggs', {
                   label: "Number of Bonus Eggs",
                   value: "2"
+                }),
+                PropertyPaneToggle('showGameArea', {
+                  label: "Show Game Area",
+                  checked: true
+                })
+              ]
+            },
+            {
+              groupName: "Advanced Settings",
+              groupFields: [
+                PropertyPaneTextField('externalCssClasses', {
+                  label: "External CSS Classes",
+                  description: "Add CSS classes outside the webpart (semicolon-separated)",
+                  multiline: true
                 })
               ]
             }

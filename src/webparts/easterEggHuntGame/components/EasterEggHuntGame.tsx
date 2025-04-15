@@ -1,4 +1,5 @@
 import * as React from 'react';
+import * as ReactDOM from 'react-dom';
 import styles from './EasterEggHuntGame.module.scss';
 import type { IEasterEggHuntGameProps } from './IEasterEggHuntGameProps';
 import { EggSize, EggZone } from './IEasterEggHuntGameProps';
@@ -8,7 +9,7 @@ import { escape } from '@microsoft/sp-lodash-subset';
 interface IEgg {
   id: number;
   x: number;
-  y: number;
+  y: number; // Fixed: Changed from boolean to number
   isBonus: boolean;
   isFound: boolean;
   size: EggSize;
@@ -24,6 +25,7 @@ interface IGameState {
   gameAreaWidth: number;
   gameAreaHeight: number;
   zoneDimensions: {[key in EggZone]: {width: number, height: number}};
+  externalElements: HTMLElement[]; // Store references to external elements
 }
 
 export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGameProps, IGameState> {
@@ -40,6 +42,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       [EggZone.PageFooter]: React.createRef(),
       [EggZone.LeftSidebar]: React.createRef(),
       [EggZone.RightSidebar]: React.createRef(),
+      [EggZone.ExternalElements]: React.createRef()
     };
 
     this.state = {
@@ -56,13 +59,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         [EggZone.PageFooter]: { width: 0, height: 0 },
         [EggZone.LeftSidebar]: { width: 0, height: 0 },
         [EggZone.RightSidebar]: { width: 0, height: 0 },
-      }
+        [EggZone.ExternalElements]: { width: 0, height: 0 }
+      },
+      externalElements: [] // Store references to external elements
     };
   }
 
   // When component mounts, set up the game area dimensions
   public componentDidMount(): void {
     this.updateZoneDimensions();
+    this.findExternalElements();
     window.addEventListener('resize', this.updateZoneDimensions);
   }
 
@@ -98,6 +104,69 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         zoneDimensions
       });
     } else {
+      this.setState({ zoneDimensions });
+    }
+  }
+
+  // Find elements with external CSS classes
+  private findExternalElements = (): void => {
+    if (this.props.externalCssClasses) {
+      // Split by semicolon and clean up each class name
+      const externalClasses = this.props.externalCssClasses.split(';').map(cls => cls.trim()).filter(cls => cls);
+      
+      // If we have external classes, find them on the page
+      if (externalClasses.length > 0) {
+        const elements: HTMLElement[] = [];
+        
+        // Find all elements with each class, but limit to avoid too many eggs
+        externalClasses.forEach(className => {
+          const found = document.getElementsByClassName(className);
+          
+          if (found && found.length > 0) {
+            // Convert HTMLCollection to array and add to elements
+            // Limit to max 3 elements per class to avoid too many eggs
+            const maxElementsPerClass = 3;
+            const elementsToAdd = Math.min(found.length, maxElementsPerClass);
+            
+            for (let i = 0; i < elementsToAdd; i++) {
+              elements.push(found[i] as HTMLElement);
+            }
+          }
+        });
+        
+        // Limit total external elements to avoid excessive eggs
+        const maxTotalElements = 5;
+        const limitedElements = elements.slice(0, maxTotalElements);
+        
+        this.setState({ externalElements: limitedElements }, () => {
+          // Update zone dimensions to include external elements
+          this.updateExternalElementsDimensions();
+        });
+      }
+    }
+  }
+  
+  // Update dimensions for external elements
+  private updateExternalElementsDimensions = (): void => {
+    if (this.state.externalElements.length > 0) {
+      const zoneDimensions = { ...this.state.zoneDimensions };
+      
+      // Sum up the total area of all external elements
+      let totalWidth = 0;
+      let totalHeight = 0;
+      
+      this.state.externalElements.forEach(element => {
+        const rect = element.getBoundingClientRect();
+        totalWidth = Math.max(totalWidth, rect.width);
+        totalHeight += rect.height;
+      });
+      
+      // Update the ExternalElements zone dimensions
+      zoneDimensions[EggZone.ExternalElements] = {
+        width: Math.max(1, totalWidth),
+        height: Math.max(1, totalHeight)
+      };
+      
       this.setState({ zoneDimensions });
     }
   }
@@ -159,6 +228,9 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
 
   // Select a random zone for an egg with weighted distribution
   private getRandomEggZone = (isBonus: boolean): EggZone => {
+    // Include external elements zone if we have external classes
+    const hasExternalElements = this.state.externalElements.length > 0;
+    
     // Bonus eggs are more likely to be placed outside the main game area
     if (isBonus) {
       const zones = [
@@ -168,7 +240,14 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         EggZone.LeftSidebar,
         EggZone.RightSidebar
       ];
-      const weights = [0.2, 0.2, 0.2, 0.2, 0.2]; // Equal distribution for bonus eggs
+      
+      if (hasExternalElements) {
+        zones.push(EggZone.ExternalElements);
+      }
+      
+      // Adjust weights to include external elements
+      const baseWeight = hasExternalElements ? 1/6 : 0.2; 
+      const weights = zones.map(() => baseWeight);
       
       return this.weightedRandomChoice(zones, weights);
     } else {
@@ -179,7 +258,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         EggZone.LeftSidebar,
         EggZone.RightSidebar
       ];
-      const weights = [0.5, 0.15, 0.15, 0.1, 0.1]; // Main game area has higher probability
+      
+      let weights = [0.5, 0.15, 0.15, 0.1, 0.1]; // Main game area has higher probability
+      
+      if (hasExternalElements) {
+        zones.push(EggZone.ExternalElements);
+        
+        // Reserve 30% probability for external elements
+        weights = weights.map(w => w * 0.7); // Reduce other weights to 70%
+        weights.push(0.3); // 30% chance for external elements
+      }
       
       return this.weightedRandomChoice(zones, weights);
     }
@@ -213,7 +301,6 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   // Generate eggs with random positions, sizes, and zones
   private generateEggs = (): IEgg[] => {
     const eggs: IEgg[] = [];
-    const totalEggs = this.props.numberOfEggs + this.props.numberOfBonusEggs;
     const eggSizeMap = {
       [EggSize.Small]: 30,
       [EggSize.Medium]: 45,
@@ -249,8 +336,10 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       });
     }
     
-    // Generate bonus eggs
-    for (let i = this.props.numberOfEggs; i < totalEggs; i++) {
+    // Generate bonus eggs - EXACTLY the number specified in props
+    const bonusEggCount = Math.min(this.props.numberOfBonusEggs, 5); // Cap at 5 to prevent excessive eggs
+    
+    for (let i = 0; i < bonusEggCount; i++) {
       const eggSize = this.getRandomEggSize();
       const eggZone = this.getRandomEggZone(true);
       const sizePx = eggSizeMap[eggSize];
@@ -263,7 +352,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       const maxY = Math.max(0, zoneDim.height - sizePx);
       
       eggs.push({
-        id: i,
+        id: this.props.numberOfEggs + i,
         x: Math.floor(Math.random() * maxX),
         y: Math.floor(Math.random() * maxY),
         isBonus: true,
@@ -363,14 +452,81 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       );
     });
   }
+
+  // Render eggs in external elements with classes like fontSizeLarge
+  private renderExternalElementEggs = () => {
+    if (this.state.externalElements.length === 0) return null;
+
+    const externalEggs = this.state.eggs.filter(egg => egg.zone === EggZone.ExternalElements);
+    if (externalEggs.length === 0) return null;
+
+    // We'll distribute eggs among the external elements
+    return externalEggs.map((egg, index) => {
+      // Determine which external element to place the egg in
+      const elementIndex = index % this.state.externalElements.length;
+      const targetElement = this.state.externalElements[elementIndex];
+      
+      if (!targetElement) return null;
+
+      // Set dimension based on egg size
+      let eggSizeClass;
+      switch(egg.size) {
+        case EggSize.Small:
+          eggSizeClass = styles.smallEgg;
+          break;
+        case EggSize.Large:
+          eggSizeClass = styles.largeEgg;
+          break;
+        default:
+          eggSizeClass = styles.mediumEgg;
+      }
+      
+      // Get element's position for absolute positioning
+      const rect = targetElement.getBoundingClientRect();
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      
+      // Calculate position within the element, accounting for scroll position
+      // Updated positioning to make eggs more visible within external elements
+      const leftPosition = scrollLeft + rect.left + Math.min(rect.width / 4, (egg.x % Math.max(40, rect.width - 50)));
+      const topPosition = scrollTop + rect.top + Math.min(rect.height / 3, (egg.y % Math.max(40, rect.height - 60)));
+      
+      return ReactDOM.createPortal(
+        <div
+          key={`external-egg-${egg.id}`}
+          className={`${styles.egg} ${eggSizeClass} ${egg.isBonus ? styles.bonusEgg : ''} ${egg.isFound ? styles.eggFound : ''}`}
+          style={{
+            position: 'fixed', // Changed from absolute to fixed for better positioning
+            left: `${leftPosition}px`,
+            top: `${topPosition}px`,
+            zIndex: 10000 // Increased z-index to ensure visibility
+          }}
+          onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
+          role="button"
+          aria-label={`${egg.isBonus ? "Bonus" : "Regular"} Easter egg ${egg.size} size`}
+          tabIndex={0}
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              !egg.isFound && this.handleEggClick(egg.id);
+            }
+          }}
+        />,
+        document.body
+      );
+    });
+  }
   
   // Render game UI
   public render(): React.ReactElement<IEasterEggHuntGameProps> {
-    const { hasTeamsContext, userDisplayName } = this.props;
+    const { hasTeamsContext, userDisplayName, externalCssClasses, showGameArea } = this.props;
     const { isGameStarted, isGameOver, score, timeLeft } = this.state;
     
+    // Parse external CSS classes (if provided) using semicolons as separator
+    const externalClasses = externalCssClasses ? externalCssClasses.split(';').map(cls => cls.trim()).filter(cls => cls) : [];
+    const externalClassString = externalClasses.length > 0 ? ' ' + externalClasses.join(' ') : '';
+    
     return (
-      <section className={`${styles.easterEggHuntGame} ${hasTeamsContext ? styles.teams : ''}`}>
+      <section className={`${styles.easterEggHuntGame}${hasTeamsContext ? ' ' + styles.teams : ''}${externalClassString}`}>
         <div 
           ref={this.zoneRefs[EggZone.PageHeader]} 
           className={styles.pageHeader}>
@@ -393,6 +549,15 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
               <div className={styles.scoreTimer}>
                 <div className={styles.score}>Score: {score}</div>
                 <div className={styles.timer}>Time Left: {timeLeft}s</div>
+                {isGameStarted && (
+                  <button 
+                    className={styles.stopButton} 
+                    onClick={this.endGame}
+                    aria-label="Stop the game"
+                  >
+                    Stop Game
+                  </button>
+                )}
               </div>
               
               {!isGameStarted && !isGameOver && (
@@ -420,14 +585,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
               )}
             </div>
             
-            <div 
-              ref={this.zoneRefs[EggZone.GameArea]} 
-              className={styles.gameArea}
-              aria-label="Easter Egg Hunt Game Area"
-              role="application"
-            >
-              {isGameStarted && this.renderEggsInZone(EggZone.GameArea)}
-            </div>
+            {showGameArea && (
+              <div 
+                ref={this.zoneRefs[EggZone.GameArea]} 
+                className={styles.gameArea}
+                aria-label="Easter Egg Hunt Game Area"
+                role="application"
+              >
+                {isGameStarted && this.renderEggsInZone(EggZone.GameArea)}
+              </div>
+            )}
           </div>
           
           <div 
@@ -443,6 +610,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           {isGameStarted && this.renderEggsInZone(EggZone.PageFooter)}
           <p className={styles.footerText}>Happy Easter Egg Hunting!</p>
         </div>
+        {isGameStarted && this.renderExternalElementEggs()}
       </section>
     );
   }

@@ -1,10 +1,10 @@
-# easter-egg-hunt-game-spf-xwebpart
+# Easter Egg Hunt Game SPFx Webpart
 
 ## Summary
 
-Short summary on functionality and used technologies.
+A fun interactive Easter Egg Hunt Game built as a SharePoint Framework web part. This web part creates an engaging, festive activity that allows users to hunt for hidden Easter eggs across a SharePoint page. The game includes regular and bonus eggs with different point values, and eggs can be placed both inside the web part and around other elements on the SharePoint page.
 
-[picture of the solution in action, if possible]
+![Easter Egg Hunt Game in action](./src/webparts/easterEggHuntGame/assets/easter-egg-game-preview.png)
 
 ## Used SharePoint Framework Version
 
@@ -19,20 +19,21 @@ Short summary on functionality and used technologies.
 
 ## Prerequisites
 
-> Any special pre-requisites?
+- SharePoint Online tenant
+- Node.js v16 or later
+- Gulp
 
 ## Solution
 
-| Solution    | Author(s)                                               |
-| ----------- | ------------------------------------------------------- |
-| folder name | Author details (name, company, twitter alias with link) |
+| Solution              | Author(s)                                       |
+|-----------------------|-------------------------------------------------|
+| Easter Egg Hunt Game  | Your Name (Your Company)                        |
 
 ## Version history
 
-| Version | Date             | Comments        |
-| ------- | ---------------- | --------------- |
-| 1.1     | March 10, 2021   | Update comment  |
-| 1.0     | January 29, 2021 | Initial release |
+| Version | Date             | Comments                                    |
+|---------|------------------|--------------------------------------------|
+| 1.0     | April 15, 2025   | Initial release                            |
 
 ## Disclaimer
 
@@ -43,26 +44,49 @@ Short summary on functionality and used technologies.
 ## Minimal Path to Awesome
 
 - Clone this repository
-- Ensure that you are at the solution folder
-- in the command-line run:
-  - **npm install**
-  - **gulp serve**
-
-> Include any additional steps as needed.
+- Navigate to the solution folder
+- Run the following commands:
+  ```bash
+  npm install
+  gulp bundle
+  gulp package-solution
+  ```
+- Upload the solution package to your app catalog
+- Add the app to your site
+- Add the web part to a page
 
 ## Features
 
-Description of the extension that expands upon high-level summary above.
+This Easter Egg Hunt Game SPFx web part offers the following features:
 
-This extension illustrates the following concepts:
+- **Interactive Gameplay**: Users can hunt for eggs by clicking on them when found
+- **Multiple Egg Types**: Regular eggs and bonus eggs with different point values
+- **Various Egg Sizes**: Small, medium, and large eggs with different point multipliers
+- **Cross-Page Integration**: Eggs can appear both inside the web part and on external page elements
+- **Configurable Settings**: Customize game duration, number of eggs, and bonus eggs
+- **Responsive Design**: Works well on various screen sizes
+- **Accessible Design**: Support for keyboard navigation and screen readers
+- **Score Tracking**: Keep track of found eggs and total score
+- **Timer**: Game ends when time runs out or all eggs are found
 
-- topic 1
-- topic 2
-- topic 3
+### Configuration Options
 
-> Notice that better pictures and documentation will increase the sample usage and the value you are providing for others. Thanks for your submissions advance.
+The web part includes the following configuration options:
 
-> Share your web part with others through Microsoft 365 Patterns and Practices program to get visibility and exposure. More details on the community, open-source projects and other activities from http://aka.ms/m365pnp.
+- **Game Duration**: Set the length of the game in seconds
+- **Number of Eggs**: Set how many regular eggs to generate
+- **Number of Bonus Eggs**: Set how many golden bonus eggs to generate
+- **Show Game Area**: Toggle whether to show the main game area
+- **External CSS Classes**: Define classes of external page elements where eggs can appear (semicolon-separated)
+
+## Usage
+
+1. Add the web part to a SharePoint page
+2. Configure the game settings in the property pane
+3. If you want eggs to appear outside the web part, add external CSS classes
+4. Click "Start Game" to begin
+5. Hunt for eggs throughout the page
+6. Game ends when all eggs are found or time runs out
 
 ## References
 

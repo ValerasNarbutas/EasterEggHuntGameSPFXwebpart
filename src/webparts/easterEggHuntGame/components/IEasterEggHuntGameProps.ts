@@ -8,6 +8,9 @@ export interface IEasterEggHuntGameProps {
   gameDuration: number; // in seconds
   numberOfEggs: number;
   numberOfBonusEggs: number;
+  // External CSS settings
+  externalCssClasses: string; // CSS classes to apply to elements outside the webpart
+  showGameArea: boolean; // Whether to show the main game area
 }
 
 // Define egg size variations
@@ -23,5 +26,6 @@ export enum EggZone {
   PageHeader = 'pageHeader', // Top of the page
   PageFooter = 'pageFooter', // Bottom of the page
   LeftSidebar = 'leftSidebar', // Left side of the page
-  RightSidebar = 'rightSidebar' // Right side of the page
+  RightSidebar = 'rightSidebar', // Right side of the page
+  ExternalElements = 'externalElements' // Elements with external CSS classes
 }
