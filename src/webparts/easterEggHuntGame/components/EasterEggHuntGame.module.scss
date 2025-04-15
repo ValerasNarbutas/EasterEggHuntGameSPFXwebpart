@@ -16,6 +16,53 @@
                     url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="5" fill="%23fadceb" opacity="0.3" /></svg>');
   background-size: 100px 100px;
 
+  // Layout styles for egg zones across the page
+  .pageHeader {
+    position: relative;
+    min-height: 100px;
+    margin-bottom: 20px;
+  }
+
+  .gameContainer {
+    display: flex;
+    position: relative;
+    margin-bottom: 20px;
+    
+    .leftSidebar {
+      position: relative;
+      width: 15%;
+      min-height: 400px;
+    }
+    
+    .mainContent {
+      position: relative;
+      flex: 1;
+      margin: 0 15px;
+    }
+    
+    .rightSidebar {
+      position: relative;
+      width: 15%;
+      min-height: 400px;
+    }
+  }
+  
+  .pageFooter {
+    position: relative;
+    min-height: 80px;
+    margin-top: 20px;
+    text-align: center;
+    
+    .footerText {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      font-style: italic;
+      color: #888;
+    }
+  }
+
   // Game header styles
   .gameHeader {
     text-align: center;
@@ -78,6 +125,18 @@
         font-size: 1.1em;
         line-height: 1.5;
         color: #555;
+        
+        ul {
+          text-align: left;
+          list-style-type: disc;
+          margin-top: 10px;
+          margin-bottom: 10px;
+          padding-left: 20px;
+          
+          li {
+            margin: 5px 0;
+          }
+        }
       }
       
       .startButton {
@@ -154,40 +213,55 @@
     margin: 0 auto;
     overflow: hidden;
     box-sizing: border-box;
+  }
 
-    // Easter egg styles
-    .egg {
-      position: absolute;
-      width: 50px;
-      height: 60px;
-      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-      cursor: pointer;
-      transition: transform 0.3s ease, opacity 0.3s ease;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-      
-      // Regular egg style
-      background: linear-gradient(135deg, #fdfdfd, #f9c5d1);
-      border: 2px solid #f9c5d1;
-      
-      &:hover {
-        transform: scale(1.1);
-      }
-      
-      &:focus {
-        outline: none;
-        box-shadow: 0 0 0 3px rgba(249, 197, 209, 0.5);
-      }
-      
-      // Bonus egg style
-      &.bonusEgg {
-        background: linear-gradient(135deg, #ffd700, #ffb347);
-        border: 2px solid #ffb347;
-      }
-      
-      // Found egg animation and style
-      &.eggFound {
-        animation: popAndFade 0.6s ease-out forwards;
-      }
+  // Easter egg common styles
+  .egg {
+    position: absolute;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+    cursor: pointer;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    
+    // Regular egg style
+    background: linear-gradient(135deg, #fdfdfd, #f9c5d1);
+    border: 2px solid #f9c5d1;
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+    
+    &:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(249, 197, 209, 0.5);
+    }
+    
+    // Egg sizes
+    &.smallEgg {
+      width: 30px;
+      height: 40px;
+    }
+    
+    &.mediumEgg {
+      width: 45px;
+      height: 55px;
+    }
+    
+    &.largeEgg {
+      width: 60px;
+      height: 75px;
+    }
+    
+    // Bonus egg style
+    &.bonusEgg {
+      background: linear-gradient(135deg, #ffd700, #ffb347);
+      border: 2px solid #ffb347;
+    }
+    
+    // Found egg animation and style
+    &.eggFound {
+      animation: popAndFade 0.6s ease-out forwards;
     }
   }
 
@@ -234,6 +308,16 @@
 
   // Responsive design adjustments
   @media (max-width: 768px) {
+    .gameContainer {
+      flex-direction: column;
+      
+      .leftSidebar, .rightSidebar {
+        width: 100%;
+        min-height: 60px;
+        margin: 10px 0;
+      }
+    }
+    
     .gameHeader {
       .gameTitle {
         font-size: 1.5em;
@@ -276,10 +360,23 @@
     .gameArea {
       min-height: 300px;
     }
-  }
-
-  &.teams {
-    font-family: $ms-font-family-fallbacks;
+    
+    .egg {
+      &.smallEgg {
+        width: 25px;
+        height: 35px;
+      }
+      
+      &.mediumEgg {
+        width: 35px;
+        height: 45px;
+      }
+      
+      &.largeEgg {
+        width: 45px;
+        height: 60px;
+      }
+    }
   }
 }
 
