@@ -3,39 +3,242 @@ import styles from './EasterEggHuntGame.module.scss';
 import type { IEasterEggHuntGameProps } from './IEasterEggHuntGameProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 
-export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGameProps> {
-  public render(): React.ReactElement<IEasterEggHuntGameProps> {
-    const {
-      description,
-      isDarkTheme,
-      environmentMessage,
-      hasTeamsContext,
-      userDisplayName
-    } = this.props;
+// Interfaces for the game state and egg objects
+interface IEgg {
+  id: number;
+  x: number;
+  y: number;
+  isBonus: boolean;
+  isFound: boolean;
+}
 
+interface IGameState {
+  isGameStarted: boolean;
+  isGameOver: boolean;
+  score: number;
+  timeLeft: number;
+  eggs: IEgg[];
+  gameAreaWidth: number;
+  gameAreaHeight: number;
+}
+
+export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGameProps, IGameState> {
+  private timerInterval: number | null = null;
+  private gameAreaRef: React.RefObject<HTMLDivElement>;
+
+  constructor(props: IEasterEggHuntGameProps) {
+    super(props);
+    this.gameAreaRef = React.createRef();
+
+    this.state = {
+      isGameStarted: false,
+      isGameOver: false,
+      score: 0,
+      timeLeft: props.gameDuration,
+      eggs: [],
+      gameAreaWidth: 0,
+      gameAreaHeight: 0
+    };
+  }
+
+  // When component mounts, set up the game area dimensions
+  public componentDidMount(): void {
+    this.updateGameAreaDimensions();
+    window.addEventListener('resize', this.updateGameAreaDimensions);
+  }
+
+  // Clean up event listeners and timer when component unmounts
+  public componentWillUnmount(): void {
+    window.removeEventListener('resize', this.updateGameAreaDimensions);
+    this.stopTimer();
+  }
+
+  // Update game area dimensions for responsive design
+  private updateGameAreaDimensions = (): void => {
+    if (this.gameAreaRef.current) {
+      this.setState({
+        gameAreaWidth: this.gameAreaRef.current.offsetWidth,
+        gameAreaHeight: this.gameAreaRef.current.offsetHeight
+      });
+    }
+  }
+
+  // Start the game timer
+  private startTimer = (): void => {
+    if (this.timerInterval !== null) {
+      clearInterval(this.timerInterval);
+    }
+    
+    this.timerInterval = window.setInterval(() => {
+      if (this.state.timeLeft > 0) {
+        this.setState(prevState => ({
+          timeLeft: prevState.timeLeft - 1
+        }));
+      } else {
+        this.endGame();
+      }
+    }, 1000);
+  }
+
+  // Stop the game timer
+  private stopTimer = (): void => {
+    if (this.timerInterval !== null) {
+      clearInterval(this.timerInterval);
+      this.timerInterval = null;
+    }
+  }
+
+  // Start a new game
+  private startGame = (): void => {
+    // Reset the game state
+    this.setState({
+      isGameStarted: true,
+      isGameOver: false,
+      score: 0,
+      timeLeft: this.props.gameDuration,
+      eggs: this.generateEggs()
+    }, () => {
+      this.startTimer();
+    });
+  }
+
+  // End the current game
+  private endGame = (): void => {
+    this.stopTimer();
+    this.setState({
+      isGameOver: true,
+      isGameStarted: false
+    });
+  }
+
+  // Generate eggs with random positions
+  private generateEggs = (): IEgg[] => {
+    const eggs: IEgg[] = [];
+    const totalEggs = this.props.numberOfEggs + this.props.numberOfBonusEggs;
+    const eggSize = 50; // Size of the egg in pixels
+    
+    // Make sure we have game area dimensions
+    if (this.state.gameAreaWidth === 0 || this.state.gameAreaHeight === 0) {
+      this.updateGameAreaDimensions();
+    }
+    
+    const maxX = this.state.gameAreaWidth - eggSize;
+    const maxY = this.state.gameAreaHeight - eggSize;
+    
+    // Generate regular eggs
+    for (let i = 0; i < this.props.numberOfEggs; i++) {
+      eggs.push({
+        id: i,
+        x: Math.floor(Math.random() * maxX),
+        y: Math.floor(Math.random() * maxY),
+        isBonus: false,
+        isFound: false
+      });
+    }
+    
+    // Generate bonus eggs
+    for (let i = this.props.numberOfEggs; i < totalEggs; i++) {
+      eggs.push({
+        id: i,
+        x: Math.floor(Math.random() * maxX),
+        y: Math.floor(Math.random() * maxY),
+        isBonus: true,
+        isFound: false
+      });
+    }
+    
+    return eggs;
+  }
+
+  // Handle egg click event
+  private handleEggClick = (eggId: number): void => {
+    this.setState(prevState => {
+      const updatedEggs = prevState.eggs.map(egg => {
+        if (egg.id === eggId && !egg.isFound) {
+          // Found egg, mark it as found
+          return { ...egg, isFound: true };
+        }
+        return egg;
+      });
+      
+      // Find the clicked egg to calculate score
+      const clickedEgg = prevState.eggs.filter(egg => egg.id === eggId)[0];
+      const scoreIncrement = clickedEgg && !clickedEgg.isFound ? 
+        (clickedEgg.isBonus ? 5 : 1) : 0;
+      
+      return {
+        eggs: updatedEggs,
+        score: prevState.score + scoreIncrement
+      };
+    });
+    
+    // Check if all eggs are found to end the game early
+    if (this.state.eggs.every(egg => egg.isFound)) {
+      this.endGame();
+    }
+  }
+  
+  // Render game UI
+  public render(): React.ReactElement<IEasterEggHuntGameProps> {
+    const { hasTeamsContext, userDisplayName } = this.props;
+    const { isGameStarted, isGameOver, score, timeLeft, eggs } = this.state;
+    
     return (
       <section className={`${styles.easterEggHuntGame} ${hasTeamsContext ? styles.teams : ''}`}>
-        <div className={styles.welcome}>
-          <img alt="" src={isDarkTheme ? require('../assets/welcome-dark.png') : require('../assets/welcome-light.png')} className={styles.welcomeImage} />
-          <h2>Well done, {escape(userDisplayName)}!</h2>
-          <div>{environmentMessage}</div>
-          <div>Web part property value: <strong>{escape(description)}</strong></div>
+        <div className={styles.gameHeader}>
+          <h2 className={styles.gameTitle}>Easter Egg Hunt Game</h2>
+          <p className={styles.welcome}>Welcome, {escape(userDisplayName)}!</p>
         </div>
-        <div>
-          <h3>Welcome to SharePoint Framework!</h3>
-          <p>
-            The SharePoint Framework (SPFx) is a extensibility model for Microsoft Viva, Microsoft Teams and SharePoint. It&#39;s the easiest way to extend Microsoft 365 with automatic Single Sign On, automatic hosting and industry standard tooling.
-          </p>
-          <h4>Learn more about SPFx development:</h4>
-          <ul className={styles.links}>
-            <li><a href="https://aka.ms/spfx" target="_blank" rel="noreferrer">SharePoint Framework Overview</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-graph" target="_blank" rel="noreferrer">Use Microsoft Graph in your solution</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-teams" target="_blank" rel="noreferrer">Build for Microsoft Teams using SharePoint Framework</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-viva" target="_blank" rel="noreferrer">Build for Microsoft Viva Connections using SharePoint Framework</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-store" target="_blank" rel="noreferrer">Publish SharePoint Framework applications to the marketplace</a></li>
-            <li><a href="https://aka.ms/spfx-yeoman-api" target="_blank" rel="noreferrer">SharePoint Framework API reference</a></li>
-            <li><a href="https://aka.ms/m365pnp" target="_blank" rel="noreferrer">Microsoft 365 Developer Community</a></li>
-          </ul>
+        
+        <div className={styles.gameInfo}>
+          <div className={styles.scoreTimer}>
+            <div className={styles.score}>Score: {score}</div>
+            <div className={styles.timer}>Time Left: {timeLeft}s</div>
+          </div>
+          
+          {!isGameStarted && !isGameOver && (
+            <div className={styles.startGameContainer}>
+              <p className={styles.instructions}>
+                Click "Start Game" to begin hunting for Easter eggs! Regular eggs are worth 1 point and golden eggs are worth 5 points.
+              </p>
+              <button className={styles.startButton} onClick={this.startGame}>Start Game</button>
+            </div>
+          )}
+          
+          {isGameOver && (
+            <div className={styles.gameOverContainer}>
+              <h3 className={styles.gameOverTitle}>Game Over!</h3>
+              <p className={styles.finalScore}>Final Score: {score}</p>
+              <button className={styles.playAgainButton} onClick={this.startGame}>Play Again</button>
+            </div>
+          )}
+        </div>
+        
+        <div 
+          ref={this.gameAreaRef} 
+          className={styles.gameArea}
+          aria-label="Easter Egg Hunt Game Area"
+          role="application"
+        >
+          {isGameStarted && eggs.map(egg => (
+            <div
+              key={egg.id}
+              className={`${styles.egg} ${egg.isBonus ? styles.bonusEgg : ''} ${egg.isFound ? styles.eggFound : ''}`}
+              style={{
+                left: `${egg.x}px`,
+                top: `${egg.y}px`
+              }}
+              onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
+              role="button"
+              aria-label={egg.isBonus ? "Bonus Easter egg" : "Easter egg"}
+              tabIndex={0}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  !egg.isFound && this.handleEggClick(egg.id);
+                }
+              }}
+            />
+          ))}
         </div>
       </section>
     );

@@ -14,6 +14,9 @@ import { IEasterEggHuntGameProps } from './components/IEasterEggHuntGameProps';
 
 export interface IEasterEggHuntGameWebPartProps {
   description: string;
+  gameDuration: number;
+  numberOfEggs: number;
+  numberOfBonusEggs: number;
 }
 
 export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEasterEggHuntGameWebPartProps> {
@@ -29,7 +32,10 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
         isDarkTheme: this._isDarkTheme,
         environmentMessage: this._environmentMessage,
         hasTeamsContext: !!this.context.sdks.microsoftTeams,
-        userDisplayName: this.context.pageContext.user.displayName
+        userDisplayName: this.context.pageContext.user.displayName,
+        gameDuration: this.properties.gameDuration || 60, // Default 60 seconds
+        numberOfEggs: this.properties.numberOfEggs || 10, // Default 10 eggs
+        numberOfBonusEggs: this.properties.numberOfBonusEggs || 2 // Default 2 bonus eggs
       }
     );
 
@@ -110,6 +116,23 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
               groupFields: [
                 PropertyPaneTextField('description', {
                   label: strings.DescriptionFieldLabel
+                })
+              ]
+            },
+            {
+              groupName: "Game Settings",
+              groupFields: [
+                PropertyPaneTextField('gameDuration', {
+                  label: "Game Duration (seconds)",
+                  value: "60"
+                }),
+                PropertyPaneTextField('numberOfEggs', {
+                  label: "Number of Eggs",
+                  value: "10"
+                }),
+                PropertyPaneTextField('numberOfBonusEggs', {
+                  label: "Number of Bonus Eggs",
+                  value: "2"
                 })
               ]
             }

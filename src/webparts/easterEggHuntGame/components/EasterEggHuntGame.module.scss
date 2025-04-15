@@ -1,10 +1,283 @@
 @import '~@fluentui/react/dist/sass/References.scss';
+@import '~@microsoft/sp-office-ui-fabric-core/dist/sass/SPFabricCore.scss';
 
 .easterEggHuntGame {
   overflow: hidden;
   padding: 1em;
   color: "[theme:bodyText, default: #323130]";
   color: var(--bodyText);
+  background-color: #f9f9f9;
+  font-family: 'Segoe UI', 'Segoe UI Web (West European)', 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, 'Helvetica Neue', sans-serif;
+  width: 100%;
+  box-sizing: border-box;
+
+  // Background with subtle Easter theme pattern
+  background-image: linear-gradient(rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.8)), 
+                    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="5" fill="%23fadceb" opacity="0.3" /></svg>');
+  background-size: 100px 100px;
+
+  // Game header styles
+  .gameHeader {
+    text-align: center;
+    padding-bottom: 15px;
+
+    .gameTitle {
+      color: #e0707c;
+      margin: 0;
+      padding: 10px;
+      font-size: 1.8em;
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    .welcome {
+      font-size: 1.1em;
+      margin: 0;
+      color: #333;
+    }
+  }
+
+  // Game information area
+  .gameInfo {
+    margin-bottom: 20px;
+    text-align: center;
+    
+    .scoreTimer {
+      display: flex;
+      justify-content: space-around;
+      background-color: rgba(255, 255, 255, 0.7);
+      border-radius: 8px;
+      padding: 10px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      
+      .score, .timer {
+        font-size: 1.3em;
+        font-weight: 600;
+        padding: 5px 15px;
+        border-radius: 5px;
+      }
+      
+      .score {
+        color: #378e3c;
+        background-color: rgba(55, 142, 60, 0.1);
+      }
+      
+      .timer {
+        color: #d05d6e;
+        background-color: rgba(208, 93, 110, 0.1);
+      }
+    }
+
+    // Start game container
+    .startGameContainer {
+      padding: 15px;
+      
+      .instructions {
+        margin-bottom: 20px;
+        font-size: 1.1em;
+        line-height: 1.5;
+        color: #555;
+      }
+      
+      .startButton {
+        background-color: #5cb85c;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 12px 28px;
+        font-size: 1.2em;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s;
+        
+        &:hover {
+          background-color: #4cae4c;
+          transform: scale(1.05);
+        }
+        
+        &:focus {
+          outline: 3px solid rgba(92, 184, 92, 0.5);
+        }
+      }
+    }
+
+    // Game over container
+    .gameOverContainer {
+      background-color: rgba(255, 255, 255, 0.9);
+      border-radius: 10px;
+      padding: 20px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      
+      .gameOverTitle {
+        color: #d05d6e;
+        font-size: 2em;
+        margin-top: 0;
+        margin-bottom: 15px;
+      }
+      
+      .finalScore {
+        font-size: 1.5em;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #378e3c;
+      }
+      
+      .playAgainButton {
+        background-color: #5bc0de;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        padding: 10px 24px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: transform 0.2s, background-color 0.2s;
+        
+        &:hover {
+          background-color: #46b8da;
+          transform: scale(1.05);
+        }
+        
+        &:focus {
+          outline: 3px solid rgba(91, 192, 222, 0.5);
+        }
+      }
+    }
+  }
+
+  // Game area
+  .gameArea {
+    position: relative;
+    background-color: rgba(215, 242, 250, 0.5);
+    border: 3px dashed #b3e5fc;
+    border-radius: 8px;
+    min-height: 400px;
+    margin: 0 auto;
+    overflow: hidden;
+    box-sizing: border-box;
+
+    // Easter egg styles
+    .egg {
+      position: absolute;
+      width: 50px;
+      height: 60px;
+      border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+      cursor: pointer;
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      
+      // Regular egg style
+      background: linear-gradient(135deg, #fdfdfd, #f9c5d1);
+      border: 2px solid #f9c5d1;
+      
+      &:hover {
+        transform: scale(1.1);
+      }
+      
+      &:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(249, 197, 209, 0.5);
+      }
+      
+      // Bonus egg style
+      &.bonusEgg {
+        background: linear-gradient(135deg, #ffd700, #ffb347);
+        border: 2px solid #ffb347;
+      }
+      
+      // Found egg animation and style
+      &.eggFound {
+        animation: popAndFade 0.6s ease-out forwards;
+      }
+    }
+  }
+
+  // Animation for found eggs
+  @keyframes popAndFade {
+    0% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.5);
+      opacity: 0.7;
+    }
+    100% {
+      transform: scale(0);
+      opacity: 0;
+    }
+  }
+
+  // Teams theme support
+  &.teams {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+
+    .gameHeader {
+      .gameTitle {
+        color: #6264a7;
+      }
+    }
+
+    .gameInfo {
+      .scoreTimer {
+        .score {
+          color: #6264a7;
+          background-color: rgba(98, 100, 167, 0.1);
+        }
+        
+        .timer {
+          color: #6264a7;
+          background-color: rgba(98, 100, 167, 0.1);
+        }
+      }
+    }
+  }
+
+  // Responsive design adjustments
+  @media (max-width: 768px) {
+    .gameHeader {
+      .gameTitle {
+        font-size: 1.5em;
+      }
+    }
+
+    .gameInfo {
+      .scoreTimer {
+        .score, .timer {
+          font-size: 1.1em;
+        }
+      }
+      
+      .startGameContainer {
+        .instructions {
+          font-size: 1em;
+        }
+        
+        .startButton {
+          font-size: 1.1em;
+          padding: 10px 20px;
+        }
+      }
+      
+      .gameOverContainer {
+        .gameOverTitle {
+          font-size: 1.8em;
+        }
+        
+        .finalScore {
+          font-size: 1.3em;
+        }
+        
+        .playAgainButton {
+          font-size: 1em;
+        }
+      }
+    }
+    
+    .gameArea {
+      min-height: 300px;
+    }
+  }
+
   &.teams {
     font-family: $ms-font-family-fallbacks;
   }
