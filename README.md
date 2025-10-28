@@ -167,8 +167,9 @@ The packaged solution will be available at `sharepoint/solution/easter-egg-hunt-
 
 ### Common Issues
 
-**Issue: "Node Sass does not yet support your current environment"**
-- Solution: Run `npm rebuild node-sass` or ensure you're using Node.js 18.17.1 or compatible version
+**Issue: Build errors related to styling**
+- Solution: Ensure you're using Node.js 18.17.1 or a compatible version specified in package.json
+- Try cleaning and reinstalling: `npm clean-install`
 
 **Issue: Eggs not appearing on external elements**
 - Solution: Make sure the CSS classes you specified in the property pane actually exist on the page
