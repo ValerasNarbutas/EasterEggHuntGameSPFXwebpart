@@ -7,7 +7,7 @@
       "@microsoft/microsoft-graph-client": "3.0.2",
       "@microsoft/teams-js": "2.24.0"
     },
-    "version": "1.20.0",
+    "version": "1.21.1",
     "libraryName": "easter-egg-hunt-game-spf-xwebpart",
     "libraryId": "a4367735-eff8-423c-80d8-b86857d53400",
     "environment": "spo",

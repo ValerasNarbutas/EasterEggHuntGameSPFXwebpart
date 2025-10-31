@@ -413,7 +413,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   }
   
   // Render egg in specific zone
-  private renderEggsInZone = (zone: EggZone) => {
+  private renderEggsInZone = (zone: EggZone): JSX.Element[] => {
     const { eggs } = this.state;
     const zoneEggs = eggs.filter(egg => egg.zone === zone);
     
@@ -445,7 +445,9 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              !egg.isFound && this.handleEggClick(egg.id);
+              if (!egg.isFound) {
+                this.handleEggClick(egg.id);
+              }
             }
           }}
         />
@@ -454,7 +456,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   }
 
   // Render eggs in external elements with classes like fontSizeLarge
-  private renderExternalElementEggs = () => {
+  private renderExternalElementEggs = (): (React.ReactPortal | null)[] | null => {
     if (this.state.externalElements.length === 0) return null;
 
     const externalEggs = this.state.eggs.filter(egg => egg.zone === EggZone.ExternalElements);
@@ -507,7 +509,9 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              !egg.isFound && this.handleEggClick(egg.id);
+              if (!egg.isFound) {
+                this.handleEggClick(egg.id);
+              }
             }
           }}
         />,
@@ -563,7 +567,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
               {!isGameStarted && !isGameOver && (
                 <div className={styles.startGameContainer}>
                   <p className={styles.instructions}>
-                    Click "Start Game" to begin hunting for Easter eggs! 
+                    Click &quot;Start Game&quot; to begin hunting for Easter eggs! 
                     Find eggs of different sizes all over the page!
                     <ul>
                       <li>Regular eggs are worth 1-3 points based on size</li>
