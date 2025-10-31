@@ -2,7 +2,7 @@ import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import styles from './EasterEggHuntGame.module.scss';
 import type { IEasterEggHuntGameProps } from './IEasterEggHuntGameProps';
-import { EggSize, EggZone } from './IEasterEggHuntGameProps';
+import { EggSize, EggZone, DifficultyLevel } from './IEasterEggHuntGameProps';
 import { escape } from '@microsoft/sp-lodash-subset';
 
 // Interfaces for the game state and egg objects
@@ -14,6 +14,7 @@ interface IEgg {
   isFound: boolean;
   size: EggSize;
   zone: EggZone;
+  foundAt?: number; // Timestamp when egg was found
 }
 
 interface IGameState {
@@ -26,6 +27,9 @@ interface IGameState {
   gameAreaHeight: number;
   zoneDimensions: {[key in EggZone]: {width: number, height: number}};
   externalElements: HTMLElement[]; // Store references to external elements
+  combo: number; // Combo multiplier for consecutive finds
+  lastFoundTime: number; // Timestamp of last egg found
+  eggsFoundCount: number; // Total eggs found
 }
 
 export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGameProps, IGameState> {
@@ -61,7 +65,10 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         [EggZone.RightSidebar]: { width: 0, height: 0 },
         [EggZone.ExternalElements]: { width: 0, height: 0 }
       },
-      externalElements: [] // Store references to external elements
+      externalElements: [], // Store references to external elements
+      combo: 0, // Start with no combo
+      lastFoundTime: 0, // No eggs found yet
+      eggsFoundCount: 0 // No eggs found yet
     };
   }
 
@@ -204,7 +211,10 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       isGameOver: false,
       score: 0,
       timeLeft: this.props.gameDuration,
-      eggs: this.generateEggs()
+      eggs: this.generateEggs(),
+      combo: 0,
+      lastFoundTime: 0,
+      eggsFoundCount: 0
     }, () => {
       this.startTimer();
     });
@@ -219,11 +229,30 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
     });
   }
 
-  // Select a random size for an egg
+  // Select a random size for an egg based on difficulty
   private getRandomEggSize = (): EggSize => {
+    const { difficultyLevel } = this.props;
+    
+    // Adjust distribution based on difficulty
+    // Easy: More large eggs (easier to find)
+    // Medium: Balanced distribution
+    // Hard: More small eggs (harder to find)
+    
+    let weights: number[];
+    
+    switch (difficultyLevel) {
+      case DifficultyLevel.Easy:
+        weights = [0.2, 0.3, 0.5]; // Small, Medium, Large
+        break;
+      case DifficultyLevel.Hard:
+        weights = [0.5, 0.3, 0.2]; // Small, Medium, Large
+        break;
+      default: // Medium
+        weights = [1/3, 1/3, 1/3]; // Small, Medium, Large
+    }
+    
     const sizes = [EggSize.Small, EggSize.Medium, EggSize.Large];
-    const randomIndex = Math.floor(Math.random() * sizes.length);
-    return sizes[randomIndex];
+    return this.weightedRandomChoice(sizes, weights);
   }
 
   // Select a random zone for an egg with weighted distribution
@@ -365,13 +394,15 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
     return eggs;
   }
 
-  // Handle egg click event
+  // Handle egg click event with improved scoring
   private handleEggClick = (eggId: number): void => {
+    const currentTime = Date.now();
+    
     this.setState(prevState => {
       const updatedEggs = prevState.eggs.map(egg => {
         if (egg.id === eggId && !egg.isFound) {
-          // Found egg, mark it as found
-          return { ...egg, isFound: true };
+          // Found egg, mark it as found with timestamp
+          return { ...egg, isFound: true, foundAt: currentTime };
         }
         return egg;
       });
@@ -379,12 +410,13 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       // Find the clicked egg to calculate score
       const clickedEgg = prevState.eggs.find((egg: IEgg) => egg.id === eggId);
       let scoreIncrement = 0;
+      let newCombo = prevState.combo;
       
       if (clickedEgg && !clickedEgg.isFound) {
         // Base points for regular/bonus eggs
         scoreIncrement = clickedEgg.isBonus ? 5 : 1;
         
-        // Size multiplier
+        // Size multiplier - harder to find = more points
         if (clickedEgg.size === EggSize.Small) {
           scoreIncrement *= 3; // Small eggs are worth more (harder to find)
         } else if (clickedEgg.size === EggSize.Medium) {
@@ -395,13 +427,43 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         if (clickedEgg.zone !== EggZone.GameArea) {
           scoreIncrement *= 1.5; // 50% bonus for eggs outside the main area
         }
+        
+        // Combo multiplier - reward consecutive finds
+        // Combo resets if more than 5 seconds between finds
+        const timeSinceLastFind = prevState.lastFoundTime > 0 ? (currentTime - prevState.lastFoundTime) / 1000 : 999;
+        
+        if (timeSinceLastFind <= 5) {
+          newCombo = prevState.combo + 1;
+          // Apply combo bonus: 10% extra per combo level (max 50% bonus at 5x combo)
+          const comboBonus = Math.min(newCombo * 0.1, 0.5);
+          scoreIncrement *= (1 + comboBonus);
+        } else {
+          newCombo = 1; // Start new combo
+        }
+        
+        // Time-based bonus - reward quick finds (first 10 seconds)
+        const gameElapsed = this.props.gameDuration - prevState.timeLeft;
+        if (gameElapsed <= 10) {
+          scoreIncrement *= 1.25; // 25% bonus for early finds
+        }
+        
+        // Difficulty multiplier - higher difficulty = more points
+        const { difficultyLevel } = this.props;
+        if (difficultyLevel === DifficultyLevel.Hard) {
+          scoreIncrement *= 1.5; // 50% bonus for hard mode
+        } else if (difficultyLevel === DifficultyLevel.Easy) {
+          scoreIncrement *= 0.75; // 25% reduction for easy mode
+        }
       }
       
       const newScore = prevState.score + Math.round(scoreIncrement);
       
       return {
         eggs: updatedEggs,
-        score: newScore
+        score: newScore,
+        combo: newCombo,
+        lastFoundTime: currentTime,
+        eggsFoundCount: prevState.eggsFoundCount + 1
       };
       
     }, () => {
@@ -413,7 +475,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   }
   
   // Render egg in specific zone
-  private renderEggsInZone = (zone: EggZone) => {
+  private renderEggsInZone = (zone: EggZone): JSX.Element[] => {
     const { eggs } = this.state;
     const zoneEggs = eggs.filter(egg => egg.zone === zone);
     
@@ -445,7 +507,9 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              !egg.isFound && this.handleEggClick(egg.id);
+              if (!egg.isFound) {
+                this.handleEggClick(egg.id);
+              }
             }
           }}
         />
@@ -454,7 +518,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   }
 
   // Render eggs in external elements with classes like fontSizeLarge
-  private renderExternalElementEggs = () => {
+  private renderExternalElementEggs = (): (React.ReactPortal | null)[] | null => {
     if (this.state.externalElements.length === 0) return null;
 
     const externalEggs = this.state.eggs.filter(egg => egg.zone === EggZone.ExternalElements);
@@ -507,7 +571,9 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
-              !egg.isFound && this.handleEggClick(egg.id);
+              if (!egg.isFound) {
+                this.handleEggClick(egg.id);
+              }
             }
           }}
         />,
@@ -518,12 +584,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   
   // Render game UI
   public render(): React.ReactElement<IEasterEggHuntGameProps> {
-    const { hasTeamsContext, userDisplayName, externalCssClasses, showGameArea } = this.props;
-    const { isGameStarted, isGameOver, score, timeLeft } = this.state;
+    const { hasTeamsContext, userDisplayName, externalCssClasses, showGameArea, difficultyLevel } = this.props;
+    const { isGameStarted, isGameOver, score, timeLeft, combo, eggsFoundCount } = this.state;
     
     // Parse external CSS classes (if provided) using semicolons as separator
     const externalClasses = externalCssClasses ? externalCssClasses.split(';').map(cls => cls.trim()).filter(cls => cls) : [];
     const externalClassString = externalClasses.length > 0 ? ' ' + externalClasses.join(' ') : '';
+    
+    // Calculate total eggs for progress
+    const totalEggs = this.state.eggs.length;
+    const difficultyText = difficultyLevel.charAt(0).toUpperCase() + difficultyLevel.slice(1);
     
     return (
       <section className={`${styles.easterEggHuntGame}${hasTeamsContext ? ' ' + styles.teams : ''}${externalClassString}`}>
@@ -532,7 +602,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           className={styles.pageHeader}>
           <div className={styles.gameHeader}>
             <h2 className={styles.gameTitle}>Easter Egg Hunt Game</h2>
-            <p className={styles.welcome}>Welcome, {escape(userDisplayName)}!</p>
+            <p className={styles.welcome}>Welcome, {escape(userDisplayName)}! | Difficulty: {difficultyText}</p>
           </div>
           {isGameStarted && this.renderEggsInZone(EggZone.PageHeader)}
         </div>
@@ -548,6 +618,12 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
             <div className={styles.gameInfo}>
               <div className={styles.scoreTimer}>
                 <div className={styles.score}>Score: {score}</div>
+                {isGameStarted && combo > 1 && (
+                  <div className={styles.combo}>Combo: {combo}x 🔥</div>
+                )}
+                {isGameStarted && (
+                  <div className={styles.progress}>Found: {eggsFoundCount}/{totalEggs}</div>
+                )}
                 <div className={styles.timer}>Time Left: {timeLeft}s</div>
                 {isGameStarted && (
                   <button 
@@ -563,13 +639,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
               {!isGameStarted && !isGameOver && (
                 <div className={styles.startGameContainer}>
                   <p className={styles.instructions}>
-                    Click "Start Game" to begin hunting for Easter eggs! 
+                    Click &quot;Start Game&quot; to begin hunting for Easter eggs! 
                     Find eggs of different sizes all over the page!
                     <ul>
-                      <li>Regular eggs are worth 1-3 points based on size</li>
-                      <li>Golden eggs are worth 5-15 points based on size</li>
-                      <li>Eggs outside the main game area give 50% bonus points</li>
-                      <li>Find all eggs to end the game early!</li>
+                      <li>🥚 Regular eggs: 1-3 points (smaller = more points)</li>
+                      <li>🌟 Golden eggs: 5-15 points (smaller = more points)</li>
+                      <li>🎯 Eggs outside game area: +50% bonus</li>
+                      <li>🔥 Combo bonus: Find eggs quickly for up to +50%</li>
+                      <li>⚡ Early bird bonus: +25% in first 10 seconds</li>
+                      <li>💪 Difficulty multiplier: Hard +50%, Easy -25%</li>
+                      <li>🏆 Find all eggs to end game early!</li>
                     </ul>
                   </p>
                   <button className={styles.startButton} onClick={this.startGame}>Start Game</button>

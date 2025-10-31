@@ -4,20 +4,22 @@ import { Version } from '@microsoft/sp-core-library';
 import {
   type IPropertyPaneConfiguration,
   PropertyPaneTextField,
-  PropertyPaneToggle
+  PropertyPaneToggle,
+  PropertyPaneDropdown
 } from '@microsoft/sp-property-pane';
 import { BaseClientSideWebPart } from '@microsoft/sp-webpart-base';
 import { IReadonlyTheme } from '@microsoft/sp-component-base';
 
 import * as strings from 'EasterEggHuntGameWebPartStrings';
 import EasterEggHuntGame from './components/EasterEggHuntGame';
-import { IEasterEggHuntGameProps } from './components/IEasterEggHuntGameProps';
+import { IEasterEggHuntGameProps, DifficultyLevel } from './components/IEasterEggHuntGameProps';
 
 export interface IEasterEggHuntGameWebPartProps {
   description: string;
   gameDuration: number;
   numberOfEggs: number;
   numberOfBonusEggs: number;
+  difficultyLevel: DifficultyLevel;
   externalCssClasses: string;
   showGameArea: boolean;
 }
@@ -39,6 +41,7 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
         gameDuration: this.properties.gameDuration || 60, // Default 60 seconds
         numberOfEggs: this.properties.numberOfEggs || 10, // Default 10 eggs
         numberOfBonusEggs: this.properties.numberOfBonusEggs || 2, // Default 2 bonus eggs
+        difficultyLevel: this.properties.difficultyLevel || DifficultyLevel.Medium, // Default Medium
         externalCssClasses: this.properties.externalCssClasses || '', // CSS classes for external elements
         showGameArea: this.properties.showGameArea !== false // Default true
       }
@@ -127,6 +130,15 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
             {
               groupName: "Game Settings",
               groupFields: [
+                PropertyPaneDropdown('difficultyLevel', {
+                  label: "Difficulty Level",
+                  selectedKey: this.properties.difficultyLevel || DifficultyLevel.Medium,
+                  options: [
+                    { key: DifficultyLevel.Easy, text: 'Easy' },
+                    { key: DifficultyLevel.Medium, text: 'Medium' },
+                    { key: DifficultyLevel.Hard, text: 'Hard' }
+                  ]
+                }),
                 PropertyPaneTextField('gameDuration', {
                   label: "Game Duration (seconds)",
                   value: "60"
