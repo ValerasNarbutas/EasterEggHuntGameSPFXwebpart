@@ -11,6 +11,7 @@ interface IEgg {
   x: number;
   y: number; // Fixed: Changed from boolean to number
   isBonus: boolean;
+  isSurprise: boolean; // Surprise eggs with extra bonus points
   isFound: boolean;
   size: EggSize;
   zone: EggZone;
@@ -359,6 +360,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         x: Math.floor(Math.random() * maxX),
         y: Math.floor(Math.random() * maxY),
         isBonus: false,
+        isSurprise: false,
         isFound: false,
         size: eggSize,
         zone: eggZone
@@ -385,6 +387,34 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         x: Math.floor(Math.random() * maxX),
         y: Math.floor(Math.random() * maxY),
         isBonus: true,
+        isSurprise: false,
+        isFound: false,
+        size: eggSize,
+        zone: eggZone
+      });
+    }
+    
+    // Generate surprise eggs with special bonus points
+    const surpriseEggCount = Math.min(this.props.numberOfSurpriseEggs || 0, 3); // Cap at 3 to keep them rare
+    
+    for (let i = 0; i < surpriseEggCount; i++) {
+      const eggSize = this.getRandomEggSize();
+      const eggZone = this.getRandomEggZone(true); // Surprise eggs can appear anywhere like bonus eggs
+      const sizePx = eggSizeMap[eggSize];
+      
+      // Get dimensions for the selected zone
+      const zoneDim = this.state.zoneDimensions[eggZone];
+      
+      // Calculate max X and Y within the zone
+      const maxX = Math.max(0, zoneDim.width - sizePx);
+      const maxY = Math.max(0, zoneDim.height - sizePx);
+      
+      eggs.push({
+        id: this.props.numberOfEggs + bonusEggCount + i,
+        x: Math.floor(Math.random() * maxX),
+        y: Math.floor(Math.random() * maxY),
+        isBonus: false,
+        isSurprise: true,
         isFound: false,
         size: eggSize,
         zone: eggZone
@@ -413,8 +443,14 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       let newCombo = prevState.combo;
       
       if (clickedEgg && !clickedEgg.isFound) {
-        // Base points for regular/bonus eggs
-        scoreIncrement = clickedEgg.isBonus ? 5 : 1;
+        // Base points for regular/bonus/surprise eggs
+        if (clickedEgg.isSurprise) {
+          scoreIncrement = 10; // Surprise eggs have high base value
+        } else if (clickedEgg.isBonus) {
+          scoreIncrement = 5;
+        } else {
+          scoreIncrement = 1;
+        }
         
         // Size multiplier - harder to find = more points
         if (clickedEgg.size === EggSize.Small) {
@@ -453,6 +489,11 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           scoreIncrement *= 1.5; // 50% bonus for hard mode
         } else if (difficultyLevel === DifficultyLevel.Easy) {
           scoreIncrement *= 0.75; // 25% reduction for easy mode
+        }
+        
+        // Extra surprise bonus - surprise eggs get an additional 2x multiplier
+        if (clickedEgg.isSurprise) {
+          scoreIncrement *= 2;
         }
       }
       
@@ -493,17 +534,29 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           eggSizeClass = styles.mediumEgg;
       }
       
+      // Determine egg type for styling and ARIA label
+      let eggTypeClass = '';
+      let eggTypeLabel = 'Regular';
+      
+      if (egg.isSurprise) {
+        eggTypeClass = styles.surpriseEgg;
+        eggTypeLabel = 'Surprise';
+      } else if (egg.isBonus) {
+        eggTypeClass = styles.bonusEgg;
+        eggTypeLabel = 'Bonus';
+      }
+      
       return (
         <div
           key={egg.id}
-          className={`${styles.egg} ${eggSizeClass} ${egg.isBonus ? styles.bonusEgg : ''} ${egg.isFound ? styles.eggFound : ''}`}
+          className={`${styles.egg} ${eggSizeClass} ${eggTypeClass} ${egg.isFound ? styles.eggFound : ''}`}
           style={{
             left: `${egg.x}px`,
             top: `${egg.y}px`
           }}
           onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
           role="button"
-          aria-label={`${egg.isBonus ? "Bonus" : "Regular"} Easter egg ${egg.size} size`}
+          aria-label={`${eggTypeLabel} Easter egg ${egg.size} size`}
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -545,6 +598,18 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           eggSizeClass = styles.mediumEgg;
       }
       
+      // Determine egg type for styling and ARIA label
+      let eggTypeClass = '';
+      let eggTypeLabel = 'Regular';
+      
+      if (egg.isSurprise) {
+        eggTypeClass = styles.surpriseEgg;
+        eggTypeLabel = 'Surprise';
+      } else if (egg.isBonus) {
+        eggTypeClass = styles.bonusEgg;
+        eggTypeLabel = 'Bonus';
+      }
+      
       // Get element's position for absolute positioning
       const rect = targetElement.getBoundingClientRect();
       const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
@@ -558,7 +623,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       return ReactDOM.createPortal(
         <div
           key={`external-egg-${egg.id}`}
-          className={`${styles.egg} ${eggSizeClass} ${egg.isBonus ? styles.bonusEgg : ''} ${egg.isFound ? styles.eggFound : ''}`}
+          className={`${styles.egg} ${eggSizeClass} ${eggTypeClass} ${egg.isFound ? styles.eggFound : ''}`}
           style={{
             position: 'fixed', // Changed from absolute to fixed for better positioning
             left: `${leftPosition}px`,
@@ -567,7 +632,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           }}
           onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
           role="button"
-          aria-label={`${egg.isBonus ? "Bonus" : "Regular"} Easter egg ${egg.size} size`}
+          aria-label={`${eggTypeLabel} Easter egg ${egg.size} size`}
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -644,6 +709,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
                     <ul>
                       <li>🥚 Regular eggs: 1-3 points (smaller = more points)</li>
                       <li>🌟 Golden eggs: 5-15 points (smaller = more points)</li>
+                      <li>🎁 Surprise eggs: 20-60+ points (RARE with 2x bonus multiplier!)</li>
                       <li>🎯 Eggs outside game area: +50% bonus</li>
                       <li>🔥 Combo bonus: Find eggs quickly for up to +50%</li>
                       <li>⚡ Early bird bonus: +25% in first 10 seconds</li>
