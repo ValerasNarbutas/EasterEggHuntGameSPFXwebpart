@@ -424,6 +424,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
     return eggs;
   }
 
+  // Helper method to determine egg type for styling and ARIA label
+  private getEggTypeInfo = (egg: IEgg): { className: string; label: string } => {
+    if (egg.isSurprise) {
+      return { className: styles.surpriseEgg, label: 'Surprise' };
+    } else if (egg.isBonus) {
+      return { className: styles.bonusEgg, label: 'Bonus' };
+    }
+    return { className: '', label: 'Regular' };
+  }
+
   // Handle egg click event with improved scoring
   private handleEggClick = (eggId: number): void => {
     const currentTime = Date.now();
@@ -535,28 +545,19 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       }
       
       // Determine egg type for styling and ARIA label
-      let eggTypeClass = '';
-      let eggTypeLabel = 'Regular';
-      
-      if (egg.isSurprise) {
-        eggTypeClass = styles.surpriseEgg;
-        eggTypeLabel = 'Surprise';
-      } else if (egg.isBonus) {
-        eggTypeClass = styles.bonusEgg;
-        eggTypeLabel = 'Bonus';
-      }
+      const eggTypeInfo = this.getEggTypeInfo(egg);
       
       return (
         <div
           key={egg.id}
-          className={`${styles.egg} ${eggSizeClass} ${eggTypeClass} ${egg.isFound ? styles.eggFound : ''}`}
+          className={`${styles.egg} ${eggSizeClass} ${eggTypeInfo.className} ${egg.isFound ? styles.eggFound : ''}`}
           style={{
             left: `${egg.x}px`,
             top: `${egg.y}px`
           }}
           onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
           role="button"
-          aria-label={`${eggTypeLabel} Easter egg ${egg.size} size`}
+          aria-label={`${eggTypeInfo.label} Easter egg ${egg.size} size`}
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
@@ -599,16 +600,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       }
       
       // Determine egg type for styling and ARIA label
-      let eggTypeClass = '';
-      let eggTypeLabel = 'Regular';
-      
-      if (egg.isSurprise) {
-        eggTypeClass = styles.surpriseEgg;
-        eggTypeLabel = 'Surprise';
-      } else if (egg.isBonus) {
-        eggTypeClass = styles.bonusEgg;
-        eggTypeLabel = 'Bonus';
-      }
+      const eggTypeInfo = this.getEggTypeInfo(egg);
       
       // Get element's position for absolute positioning
       const rect = targetElement.getBoundingClientRect();
@@ -623,7 +615,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       return ReactDOM.createPortal(
         <div
           key={`external-egg-${egg.id}`}
-          className={`${styles.egg} ${eggSizeClass} ${eggTypeClass} ${egg.isFound ? styles.eggFound : ''}`}
+          className={`${styles.egg} ${eggSizeClass} ${eggTypeInfo.className} ${egg.isFound ? styles.eggFound : ''}`}
           style={{
             position: 'fixed', // Changed from absolute to fixed for better positioning
             left: `${leftPosition}px`,
@@ -632,7 +624,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
           }}
           onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
           role="button"
-          aria-label={`${eggTypeLabel} Easter egg ${egg.size} size`}
+          aria-label={`${eggTypeInfo.label} Easter egg ${egg.size} size`}
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
