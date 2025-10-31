@@ -10,7 +10,7 @@ A fun interactive Easter Egg Hunt Game built as a SharePoint Framework web part.
 
 ## Used SharePoint Framework Version
 
-![version](https://img.shields.io/badge/version-1.20.0-green.svg)
+![version](https://img.shields.io/badge/version-1.21.1-green.svg)
 
 ## Applies to
 
@@ -37,6 +37,7 @@ A fun interactive Easter Egg Hunt Game built as a SharePoint Framework web part.
 | Version | Date             | Comments                                    |
 |---------|------------------|--------------------------------------------|
 | 0.0.1   | October 28, 2025 | Initial release                            |
+| 0.0.2   | October 31, 2025 | Updated to SPFx 1.21.1, improved scoring system with combo multiplier and time bonuses, added difficulty levels |
 
 ## Disclaimer
 
@@ -70,6 +71,10 @@ This Easter Egg Hunt Game SPFx web part offers the following features:
 
 ### Game Mechanics
 - **Interactive Gameplay**: Users can hunt for eggs by clicking on them when found
+- **Difficulty Levels**: Three difficulty levels that affect egg distribution and scoring
+  - **Easy**: More large eggs, 25% score reduction
+  - **Medium**: Balanced egg distribution, standard scoring
+  - **Hard**: More small eggs (harder to find), 50% score bonus
 - **Multiple Egg Types**: 
   - Regular eggs worth 1-3 points (based on size)
   - Bonus (golden) eggs worth 5-15 points (based on size)
@@ -77,7 +82,13 @@ This Easter Egg Hunt Game SPFx web part offers the following features:
   - Small eggs (30px) - 3x point multiplier (harder to find)
   - Medium eggs (45px) - 2x point multiplier
   - Large eggs (60px) - 1x point multiplier
-- **Strategic Scoring**: Eggs found outside the main game area earn 50% bonus points
+- **Advanced Scoring System**:
+  - **Size Bonus**: Smaller eggs worth more points (harder to find)
+  - **Zone Bonus**: 50% extra points for eggs outside the main game area
+  - **Combo Multiplier**: Find eggs quickly (within 5 seconds) to build up to 5x combo for up to 50% bonus
+  - **Early Bird Bonus**: 25% extra points for eggs found in the first 10 seconds
+  - **Difficulty Multiplier**: Bonus/penalty based on selected difficulty level
+- **Real-time Progress**: Track your score, combo streak, and eggs found
 - **Timer**: Configurable game duration with countdown display
 - **Win Conditions**: Game ends when time runs out OR all eggs are found
 
@@ -94,6 +105,7 @@ This Easter Egg Hunt Game SPFx web part offers the following features:
 
 ### Configuration Options
 The web part includes the following property pane settings:
+- **Difficulty Level**: Choose between Easy, Medium, or Hard (default: Medium)
 - **Game Duration**: Set the length of the game in seconds (default: 60)
 - **Number of Eggs**: Set how many regular eggs to generate (default: 10)
 - **Number of Bonus Eggs**: Set how many golden bonus eggs to generate (default: 2, max: 5)
@@ -108,7 +120,8 @@ The web part includes the following property pane settings:
   - High contrast support
 - **Visual Feedback**: 
   - Eggs disappear with animation when clicked
-  - Real-time score and timer updates
+  - Real-time score, combo streak, and eggs found counter
+  - Animated combo indicator with fire emoji 🔥
   - Clear game over screen with final score
 - **Game Controls**: Start, stop, and restart functionality
 
@@ -116,6 +129,7 @@ The web part includes the following property pane settings:
 
 1. Add the web part to a SharePoint page
 2. Configure the game settings in the property pane:
+   - **Difficulty Level**: Choose between Easy, Medium, or Hard difficulty (default: Medium)
    - **Game Duration**: Set the length of the game in seconds (default: 60)
    - **Number of Eggs**: Set how many regular eggs to generate (default: 10)
    - **Number of Bonus Eggs**: Set how many golden bonus eggs to generate (default: 2)
@@ -129,7 +143,9 @@ The web part includes the following property pane settings:
    - In left and right sidebars
    - On external page elements (if configured)
 5. Click on eggs to collect them and earn points
-6. Game ends when all eggs are found or time runs out
+6. Build combo streaks by finding eggs quickly (within 5 seconds)
+7. Aim for high scores with strategic play and difficulty selection
+8. Game ends when all eggs are found or time runs out
 
 ## Development
 
@@ -193,7 +209,7 @@ To enable detailed logging during development, you can check the browser console
 ### Architecture
 
 The solution is built using:
-- **SharePoint Framework (SPFx) 1.20.0**: Modern development model for SharePoint customizations
+- **SharePoint Framework (SPFx) 1.21.1**: Modern development model for SharePoint customizations
 - **React 17.0.1**: Component-based UI library
 - **TypeScript 4.7.4**: Strongly-typed JavaScript for better development experience
 - **Fluent UI React**: Microsoft's design system for consistent UX
@@ -216,20 +232,24 @@ src/
 ### Key Components
 
 - **EasterEggHuntGameWebPart**: Main SPFx web part class that handles property pane configuration and React component rendering
-- **EasterEggHuntGame**: React component managing game state, egg generation, timer logic, and user interactions
+- **EasterEggHuntGame**: React component managing game state, egg generation, timer logic, combo system, and user interactions
 - **Egg Zones**: Multiple rendering zones (GameArea, PageHeader, PageFooter, LeftSidebar, RightSidebar, ExternalElements)
 - **Portal Rendering**: External element eggs use React portals for DOM manipulation outside the web part
 
 ### Game Logic
 
 1. **Initialization**: On component mount, zone dimensions are calculated and external elements are identified
-2. **Egg Generation**: Eggs are randomly placed with weighted distribution across zones
+2. **Difficulty-based Egg Generation**: Eggs are randomly placed with weighted distribution across zones based on difficulty level
 3. **Timer Management**: Countdown timer runs every second, ending the game at zero
-4. **Score Calculation**: 
+4. **Advanced Score Calculation**: 
    - Base points (1 for regular, 5 for bonus)
    - Size multiplier (3x small, 2x medium, 1x large)
    - Zone bonus (1.5x for eggs outside main game area)
-5. **State Management**: React state handles game status, eggs, score, and timer
+   - Combo multiplier (up to 1.5x for consecutive finds within 5 seconds)
+   - Early bird bonus (1.25x for finds in first 10 seconds)
+   - Difficulty multiplier (1.5x for hard, 0.75x for easy)
+5. **Combo System**: Tracks time between finds and resets if more than 5 seconds elapse
+6. **State Management**: React state handles game status, eggs, score, timer, combo, and progress tracking
 
 ## References
 

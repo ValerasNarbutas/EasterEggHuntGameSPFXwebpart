@@ -130,8 +130,10 @@
       padding: 10px;
       margin-bottom: 15px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      flex-wrap: wrap;
+      gap: 10px;
       
-      .score, .timer {
+      .score, .timer, .combo, .progress {
         font-size: 1.3em;
         font-weight: 600;
         padding: 5px 15px;
@@ -141,6 +143,17 @@
       .score {
         color: #378e3c;
         background-color: rgba(55, 142, 60, 0.1);
+      }
+      
+      .combo {
+        color: #ff6b35;
+        background-color: rgba(255, 107, 53, 0.1);
+        animation: pulse 1s ease-in-out infinite;
+      }
+      
+      .progress {
+        color: #5271ff;
+        background-color: rgba(82, 113, 255, 0.1);
       }
       
       .timer {
@@ -368,6 +381,16 @@
     100% {
       transform: scale(0);
       opacity: 0;
+    }
+  }
+  
+  // Animation for combo indicator
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.05);
     }
   }
 

@@ -8,9 +8,17 @@ export interface IEasterEggHuntGameProps {
   gameDuration: number; // in seconds
   numberOfEggs: number;
   numberOfBonusEggs: number;
+  difficultyLevel: DifficultyLevel; // Difficulty level
   // External CSS settings
   externalCssClasses: string; // CSS classes to apply to elements outside the webpart
   showGameArea: boolean; // Whether to show the main game area
+}
+
+// Define difficulty levels
+export enum DifficultyLevel {
+  Easy = 'easy',
+  Medium = 'medium',
+  Hard = 'hard'
 }
 
 // Define egg size variations
