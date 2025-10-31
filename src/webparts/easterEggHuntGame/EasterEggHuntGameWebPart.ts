@@ -132,7 +132,7 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
               groupFields: [
                 PropertyPaneDropdown('difficultyLevel', {
                   label: "Difficulty Level",
-                  selectedKey: DifficultyLevel.Medium,
+                  selectedKey: this.properties.difficultyLevel || DifficultyLevel.Medium,
                   options: [
                     { key: DifficultyLevel.Easy, text: 'Easy' },
                     { key: DifficultyLevel.Medium, text: 'Medium' },

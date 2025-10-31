@@ -248,7 +248,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         weights = [0.5, 0.3, 0.2]; // Small, Medium, Large
         break;
       default: // Medium
-        weights = [0.33, 0.34, 0.33]; // Small, Medium, Large
+        weights = [1/3, 1/3, 1/3]; // Small, Medium, Large
     }
     
     const sizes = [EggSize.Small, EggSize.Medium, EggSize.Large];
