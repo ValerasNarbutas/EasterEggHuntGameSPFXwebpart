@@ -206,18 +206,38 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
 
   // Start a new game
   private startGame = (): void => {
-    // Reset the game state
+    console.log('🎮 Starting game...');
+    
+    // First, set the game as started to render the zones
     this.setState({
       isGameStarted: true,
       isGameOver: false,
       score: 0,
       timeLeft: this.props.gameDuration,
-      eggs: this.generateEggs(),
+      eggs: [],
       combo: 0,
       lastFoundTime: 0,
       eggsFoundCount: 0
     }, () => {
-      this.startTimer();
+      console.log('🎮 Game state set to started');
+      
+      // After the UI renders, update dimensions and generate eggs
+      setTimeout(() => {
+        console.log('🎮 Updating zone dimensions...');
+        this.updateZoneDimensions();
+        
+        console.log('🎮 Zone dimensions:', this.state.zoneDimensions);
+        
+        const generatedEggs = this.generateEggs();
+        console.log('🥚 Generated eggs:', generatedEggs);
+        
+        this.setState({
+          eggs: generatedEggs
+        }, () => {
+          console.log('🎮 Eggs set in state:', this.state.eggs);
+          this.startTimer();
+        });
+      }, 100); // Small delay to ensure DOM is updated
     });
   }
 
@@ -330,6 +350,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
 
   // Generate eggs with random positions, sizes, and zones
   private generateEggs = (): IEgg[] => {
+    console.log('🥚 Generating eggs...');
     const eggs: IEgg[] = [];
     const eggSizeMap = {
       [EggSize.Small]: 30,
@@ -337,10 +358,21 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       [EggSize.Large]: 60
     };
     
-    // Make sure we have zone dimensions
-    if (Object.values(this.state.zoneDimensions).some((dim: {width: number, height: number}) => dim.width === 0 && dim.height === 0)) {
-      this.updateZoneDimensions();
-    }
+    // Update zone dimensions before generating eggs
+    this.updateZoneDimensions();
+    
+    // Fallback dimensions if zones are not ready
+    const fallbackDimensions = {
+      [EggZone.GameArea]: { width: 600, height: 400 },
+      [EggZone.PageHeader]: { width: 800, height: 100 },
+      [EggZone.PageFooter]: { width: 800, height: 80 },
+      [EggZone.LeftSidebar]: { width: 150, height: 400 },
+      [EggZone.RightSidebar]: { width: 150, height: 400 },
+      [EggZone.ExternalElements]: { width: 200, height: 100 }
+    };
+    
+    console.log('🥚 Current zone dimensions:', this.state.zoneDimensions);
+    console.log('🥚 Number of eggs to generate:', this.props.numberOfEggs);
     
     // Generate regular eggs
     for (let i = 0; i < this.props.numberOfEggs; i++) {
@@ -348,17 +380,26 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       const eggZone = this.getRandomEggZone(false);
       const sizePx = eggSizeMap[eggSize];
       
-      // Get dimensions for the selected zone
+      // Get dimensions for the selected zone with fallback
       const zoneDim = this.state.zoneDimensions[eggZone];
+      const actualDim = {
+        width: zoneDim.width > 0 ? zoneDim.width : fallbackDimensions[eggZone].width,
+        height: zoneDim.height > 0 ? zoneDim.height : fallbackDimensions[eggZone].height
+      };
       
       // Calculate max X and Y within the zone
-      const maxX = Math.max(0, zoneDim.width - sizePx);
-      const maxY = Math.max(0, zoneDim.height - sizePx);
+      const maxX = Math.max(0, actualDim.width - sizePx);
+      const maxY = Math.max(0, actualDim.height - sizePx);
+      
+      const eggX = Math.floor(Math.random() * maxX);
+      const eggY = Math.floor(Math.random() * maxY);
+      
+      console.log(`🥚 Regular egg ${i}: zone=${eggZone}, size=${eggSize}, dim=${actualDim.width}x${actualDim.height}, maxPos=${maxX}x${maxY}, pos=${eggX}x${eggY}`);
       
       eggs.push({
         id: i,
-        x: Math.floor(Math.random() * maxX),
-        y: Math.floor(Math.random() * maxY),
+        x: eggX,
+        y: eggY,
         isBonus: false,
         isSurprise: false,
         isFound: false,
@@ -375,12 +416,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       const eggZone = this.getRandomEggZone(true);
       const sizePx = eggSizeMap[eggSize];
       
-      // Get dimensions for the selected zone
+      // Get dimensions for the selected zone with fallback
       const zoneDim = this.state.zoneDimensions[eggZone];
+      const actualDim = {
+        width: zoneDim.width > 0 ? zoneDim.width : fallbackDimensions[eggZone].width,
+        height: zoneDim.height > 0 ? zoneDim.height : fallbackDimensions[eggZone].height
+      };
       
       // Calculate max X and Y within the zone
-      const maxX = Math.max(0, zoneDim.width - sizePx);
-      const maxY = Math.max(0, zoneDim.height - sizePx);
+      const maxX = Math.max(0, actualDim.width - sizePx);
+      const maxY = Math.max(0, actualDim.height - sizePx);
       
       eggs.push({
         id: this.props.numberOfEggs + i,
@@ -402,12 +447,16 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       const eggZone = this.getRandomEggZone(true); // Surprise eggs can appear anywhere like bonus eggs
       const sizePx = eggSizeMap[eggSize];
       
-      // Get dimensions for the selected zone
+      // Get dimensions for the selected zone with fallback
       const zoneDim = this.state.zoneDimensions[eggZone];
+      const actualDim = {
+        width: zoneDim.width > 0 ? zoneDim.width : fallbackDimensions[eggZone].width,
+        height: zoneDim.height > 0 ? zoneDim.height : fallbackDimensions[eggZone].height
+      };
       
       // Calculate max X and Y within the zone
-      const maxX = Math.max(0, zoneDim.width - sizePx);
-      const maxY = Math.max(0, zoneDim.height - sizePx);
+      const maxX = Math.max(0, actualDim.width - sizePx);
+      const maxY = Math.max(0, actualDim.height - sizePx);
       
       eggs.push({
         id: this.props.numberOfEggs + bonusEggCount + i,
@@ -436,9 +485,11 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
 
   // Handle egg click event with improved scoring
   private handleEggClick = (eggId: number): void => {
+    console.log(`🎯 handleEggClick called for egg ${eggId}`);
     const currentTime = Date.now();
     
     this.setState(prevState => {
+      console.log(`🎯 Previous state eggs:`, prevState.eggs.map(e => ({id: e.id, found: e.isFound})));
       const updatedEggs = prevState.eggs.map(egg => {
         if (egg.id === eggId && !egg.isFound) {
           // Found egg, mark it as found with timestamp
@@ -509,7 +560,7 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       
       const newScore = prevState.score + Math.round(scoreIncrement);
       
-      return {
+      const newState = {
         eggs: updatedEggs,
         score: newScore,
         combo: newCombo,
@@ -517,9 +568,19 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
         eggsFoundCount: prevState.eggsFoundCount + 1
       };
       
+      console.log(`🎯 New state after egg ${eggId} click:`, {
+        score: newState.score,
+        eggsFoundCount: newState.eggsFoundCount,
+        foundEggs: newState.eggs.filter(e => e.isFound).length
+      });
+      
+      return newState;
+      
     }, () => {
       // After state update, check if all eggs are found
+      console.log(`🎯 State updated. Total found: ${this.state.eggs.filter(e => e.isFound).length}/${this.state.eggs.length}`);
       if (this.state.eggs.every((egg: IEgg) => egg.isFound)) {
+        console.log(`🎉 All eggs found! Ending game.`);
         this.endGame(); // End game immediately if all eggs found
       }
     });
@@ -529,6 +590,10 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
   private renderEggsInZone = (zone: EggZone): JSX.Element[] => {
     const { eggs } = this.state;
     const zoneEggs = eggs.filter(egg => egg.zone === zone);
+    
+    if (zoneEggs.length > 0) {
+      console.log(`🎨 Rendering ${zoneEggs.length} eggs in zone ${zone}:`, zoneEggs);
+    }
     
     return zoneEggs.map(egg => {
       // Set dimension based on egg size
@@ -547,20 +612,46 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
       // Determine egg type for styling and ARIA label
       const eggTypeInfo = this.getEggTypeInfo(egg);
       
+      console.log(`🥚 Rendering egg ${egg.id} at position (${egg.x}, ${egg.y}) in zone ${zone} with classes:`, `${styles.egg} ${eggSizeClass} ${eggTypeInfo.className}`);
+      
       return (
         <div
           key={egg.id}
+          ref={(el) => {
+            if (el) {
+              console.log(`🎯 Egg ${egg.id} DOM element created:`, el, 'Computed style:', window.getComputedStyle(el));
+            }
+          }}
           className={`${styles.egg} ${eggSizeClass} ${eggTypeInfo.className} ${egg.isFound ? styles.eggFound : ''}`}
           style={{
+            position: 'absolute',
             left: `${egg.x}px`,
-            top: `${egg.y}px`
+            top: `${egg.y}px`,
+            width: '40px',
+            height: '50px',
+            // Temporary debugging styles to make eggs highly visible
+            background: egg.isFound ? 'green' : 'red',
+            border: '3px solid black',
+            opacity: egg.isFound ? '0.3' : '1',
+            zIndex: '9999',
+            borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+            transform: egg.isFound ? 'scale(0.8)' : 'scale(1)',
+            transition: 'all 0.3s ease'
           }}
-          onClick={() => !egg.isFound && this.handleEggClick(egg.id)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log(`🖱️ Egg ${egg.id} clicked! Found: ${egg.isFound}`);
+            if (!egg.isFound) {
+              this.handleEggClick(egg.id);
+            }
+          }}
           role="button"
           aria-label={`${eggTypeInfo.label} Easter egg ${egg.size} size`}
           tabIndex={0}
           onKeyPress={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
+              console.log(`⌨️ Egg ${egg.id} key pressed! Found: ${egg.isFound}`);
               if (!egg.isFound) {
                 this.handleEggClick(egg.id);
               }
@@ -662,6 +753,19 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
             <p className={styles.welcome}>Welcome, {escape(userDisplayName)}! | Difficulty: {difficultyText}</p>
           </div>
           {isGameStarted && this.renderEggsInZone(EggZone.PageHeader)}
+          {isGameStarted && (
+            <div style={{
+              position: 'absolute',
+              top: '5px',
+              right: '5px',
+              background: 'green',
+              color: 'white',
+              padding: '5px',
+              zIndex: 10000
+            }}>
+              TEST - Page Header
+            </div>
+          )}
         </div>
         
         <div className={styles.gameContainer}>
@@ -730,6 +834,19 @@ export default class EasterEggHuntGame extends React.Component<IEasterEggHuntGam
                 role="application"
               >
                 {isGameStarted && this.renderEggsInZone(EggZone.GameArea)}
+            {isGameStarted && (
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                background: 'blue',
+                color: 'white',
+                padding: '5px',
+                zIndex: 10000
+              }}>
+                TEST ELEMENT - Game Area
+              </div>
+            )}
               </div>
             )}
           </div>
