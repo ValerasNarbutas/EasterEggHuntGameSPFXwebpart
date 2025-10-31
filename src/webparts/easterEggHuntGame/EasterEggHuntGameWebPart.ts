@@ -19,6 +19,7 @@ export interface IEasterEggHuntGameWebPartProps {
   gameDuration: number;
   numberOfEggs: number;
   numberOfBonusEggs: number;
+  numberOfSurpriseEggs: number;
   difficultyLevel: DifficultyLevel;
   externalCssClasses: string;
   showGameArea: boolean;
@@ -41,6 +42,7 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
         gameDuration: this.properties.gameDuration || 60, // Default 60 seconds
         numberOfEggs: this.properties.numberOfEggs || 10, // Default 10 eggs
         numberOfBonusEggs: this.properties.numberOfBonusEggs || 2, // Default 2 bonus eggs
+        numberOfSurpriseEggs: this.properties.numberOfSurpriseEggs || 1, // Default 1 surprise egg
         difficultyLevel: this.properties.difficultyLevel || DifficultyLevel.Medium, // Default Medium
         externalCssClasses: this.properties.externalCssClasses || '', // CSS classes for external elements
         showGameArea: this.properties.showGameArea !== false // Default true
@@ -150,6 +152,11 @@ export default class EasterEggHuntGameWebPart extends BaseClientSideWebPart<IEas
                 PropertyPaneTextField('numberOfBonusEggs', {
                   label: "Number of Bonus Eggs",
                   value: "2"
+                }),
+                PropertyPaneTextField('numberOfSurpriseEggs', {
+                  label: "Number of Surprise Eggs",
+                  value: "1",
+                  description: "Rare eggs with 2x bonus multiplier (max 3)"
                 }),
                 PropertyPaneToggle('showGameArea', {
                   label: "Show Game Area",

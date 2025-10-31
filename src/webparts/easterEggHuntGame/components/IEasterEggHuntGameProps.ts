@@ -8,6 +8,7 @@ export interface IEasterEggHuntGameProps {
   gameDuration: number; // in seconds
   numberOfEggs: number;
   numberOfBonusEggs: number;
+  numberOfSurpriseEggs: number; // Number of surprise eggs with special bonus
   difficultyLevel: DifficultyLevel; // Difficulty level
   // External CSS settings
   externalCssClasses: string; // CSS classes to apply to elements outside the webpart
